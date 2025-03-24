@@ -12,6 +12,9 @@ app.secret_key = os.getenv('SECRET_KEY', 'expense_tracker_secret_key')
 #database_url = os.getenv('DATABASE_URL')
 database_url = os.getenv('DATABASE_URL')
 if database_url:
+    # Fix for Render's postgres vs postgresql URL format
+    if database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 else:
     # Use SQLite for local development
