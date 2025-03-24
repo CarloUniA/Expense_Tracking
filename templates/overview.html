@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Overview</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <style>
+        .overview-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }
+        .overview-section h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #1e293b;
+        }
+        .overview-section p {
+            margin: 0.5rem 0;
+            font-size: 1rem;
+            color: #64748b;
+        }
+        .overview-section p strong {
+            color: #1e293b;
+        }
+        .summary-section .net-balance.positive {
+            color: #10b981;
+            font-weight: 600;
+        }
+        .summary-section .net-balance.negative {
+            color: #ef4444;
+            font-weight: 600;
+        }
+        .income-section h2 {
+            color: #10b981;
+        }
+        .expense-section h2 {
+            color: #ef4444;
+        }
+        .trends-section p {
+            margin: 0.25rem 0;
+        }
+        .trends-section hr {
+            margin: 1rem 0;
+            border: 0;
+            border-top: 1px solid #e2e8f0;
+        }
+        .no-data-message {
+            color: #64748b;
+            font-style: italic;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Expense Overview</h1>
+
+        <div class="version-indicator">
+            You are using the <strong>{{ session.get('version').capitalize() }}</strong> version
+            {% if current_month %}
+                <span class="run-status">Showing data for {{ current_month|strftime }}</span>
+            {% endif %}
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for message in messages %}
+                    <div class="flash-message">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% endwith %}
+
+        {% if not has_data and not current_month %}
+            <div class="overview-section">
+                <p class="no-data-message">No data available. Start tracking expenses to see your financial overview!</p>
+            </div>
+        {% else %}
+            <!-- Summary Section -->
+            <div class="overview-section summary-section">
+                <h2>Financial Summary {% if current_month %}for {{ current_month|strftime }}{% endif %}</h2>
+                <p><strong>Total Income:</strong> {{ total_income|round(2) }}€</p>
+                <p><strong>Total Expenses:</strong> {{ total_expenses|round(2) }}€</p>
+                <p><strong>Budget Goal:</strong>
+                    {% if use_personalization %}
+                        {% if user_model.budget_goal is not none %}
+                            {{ user_model.budget_goal|round(2) }}€
+                        {% else %}
+                            Not set
+                        {% endif %}
+                    {% else %}
+                        {% if random_data.budget_goal is not none %}
+                            {{ random_data.budget_goal|round(2) }}€
+                        {% else %}
+                            Not set
+                        {% endif %}
+                    {% endif %}
+                </p>
+                <p><strong>Net Balance:</strong> <span class="net-balance {% if total_income - total_expenses >= 0 %}positive{% else %}negative{% endif %}">{{ (total_income - total_expenses)|round(2) }}€</span></p>
+            </div>
+
+            <!-- Income Section -->
+            <div class="overview-section income-section">
+                <h2>Income by Source {% if current_month %}for {{ current_month|strftime }}{% endif %}</h2>
+                {% if incomes_by_source %}
+                    {% for source, amount in incomes_by_source %}
+                        <p>{{ source }}: {{ amount|round(2) }}€</p>
+                    {% endfor %}
+                {% else %}
+                    <p>No income recorded for this month.</p>
+                {% endif %}
+            </div>
+
+            <!-- Expenses Section -->
+            <div class="overview-section expense-section">
+                <h2>Expenses by Category {% if current_month %}for {{ current_month|strftime }}{% endif %}</h2>
+                {% if expenses_by_category %}
+                    {% for category, amount in expenses_by_category %}
+                        <p>{{ category }}: {{ amount|round(2) }}€</p>
+                    {% endfor %}
+                {% else %}
+                    <p>No expenses recorded for this month.</p>
+                {% endif %}
+            </div>
+
+            <!-- Trends Section -->
+            <div class="overview-section trends-section">
+                <h2>Financial Trends Across Months</h2>
+                {% if trends.total_expenses_per_month %}
+                    {% for month in trends.total_expenses_per_month.keys()|sort(reverse=True) %}
+                        <p><strong>{{ month|strftime }}:</strong></p>
+                        <p>Total Income: {{ trends.total_income_per_month.get(month, 0)|round(2) }}€</p>
+                        <p>Total Expenses: {{ trends.total_expenses_per_month.get(month, 0)|round(2) }}€</p>
+                        <p>Net Balance: {{ (trends.total_income_per_month.get(month, 0) - trends.total_expenses_per_month.get(month, 0))|round(2) }}€</p>
+                        <hr>
+                    {% endfor %}
+                {% else %}
+                    <p>No trends available. Complete at least one month to see financial trends.</p>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <div class="navigation-buttons">
+            <a href="/track_expenses" class="btn btn-primary">Track Expenses</a>
+            <a href="/" class="btn btn-secondary">Return to Home</a>
+        </div>
+    </div>
+</body>
+</html>

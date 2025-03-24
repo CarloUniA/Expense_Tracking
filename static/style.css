@@ -1,0 +1,401 @@
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: #f5f7fa;
+    color: #333;
+    line-height: 1.6;
+}
+
+/* Container */
+.container, .overview-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+/* Headings */
+h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+h2 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: #4a5568;
+    margin-bottom: 1rem;
+}
+
+h3 {
+    font-size: 1.3rem;
+    font-weight: 500;
+    color: #718096;
+    margin-bottom: 0.5rem;
+}
+
+/* Paragraphs */
+p {
+    font-size: 1rem;
+    color: #718096;
+    margin-bottom: 1rem;
+}
+
+/* Buttons */
+.btn {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    text-align: center;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #6366f1, #a855f7);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 6px rgba(99, 102, 241, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(99, 102, 241, 0.4);
+}
+
+.btn-secondary {
+    background: #e2e8f0;
+    color: #4a5568;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-secondary:hover {
+    background: #cbd5e1;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #ef4444, #f87171);
+    color: white;
+    border: none;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+}
+
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
+}
+
+/* Forms */
+.form {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+}
+
+.input-field {
+    width: 100%;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.2s ease;
+}
+
+.input-field:focus {
+    border-color: #6366f1;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #4a5568;
+    margin-bottom: 0.25rem;
+}
+
+/* Progress Bar */
+.progress-bar {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    background: #e2e8f0;
+    padding: 0.5rem;
+    border-radius: 8px;
+}
+
+.progress-step {
+    flex: 1;
+    text-align: center;
+    padding: 0.5rem;
+    font-size: 0.9rem;
+    color: #718096;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+.progress-step.active {
+    background: #6366f1;
+    color: white;
+    font-weight: 600;
+    border-radius: 6px;
+}
+
+.progress-step.completed {
+    background: #10b981;
+    color: white;
+}
+
+/* Hints */
+.hints {
+    background: #e0f2fe;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #3b82f6;
+}
+
+.hints ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.hints li {
+    font-size: 0.95rem;
+    color: #1e40af;
+    margin-bottom: 0.5rem;
+}
+
+/* Summary */
+.summary {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.warning {
+    color: #ef4444;
+    font-weight: 500;
+}
+
+/* Expense Items */
+.expense-container {
+    display: grid;
+    gap: 1rem;
+}
+
+.expense-item {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+}
+
+.expense-item:hover {
+    transform: translateY(-3px);
+}
+
+.expense-header {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.expense-amount {
+    font-size: 1.1rem;
+    color: #6366f1;
+    font-weight: 500;
+}
+
+.expense-date {
+    font-size: 0.9rem;
+    color: #718096;
+}
+
+.expense-description {
+    font-size: 0.95rem;
+    color: #4a5568;
+    margin-top: 0.5rem;
+}
+
+/* Navigation */
+.navigation-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+/* Version Indicator */
+.version-indicator {
+    text-align: center;
+    font-size: 1rem;
+    color: #4a5568;
+    margin-bottom: 1.5rem;
+}
+
+.run-status {
+    font-weight: 600;
+    color: #6366f1;
+    margin-left: 0.5rem;
+}
+
+/* Flash Messages */
+.flash-messages {
+    margin-bottom: 1.5rem;
+}
+
+.flash-message {
+    background: #d1fae5;
+    color: #065f46;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    border-left: 4px solid #10b981;
+}
+
+/* Overview Styles */
+.overview-list {
+    list-style: none;
+    padding: 0;
+}
+
+.overview-item {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.user-insights {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    margin-top: 1.5rem;
+}
+
+/* Home Page Styles */
+.home-container {
+    text-align: center;
+}
+
+.version-selector {
+    margin: 2rem 0;
+}
+
+.version-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.version-note {
+    font-size: 0.9rem;
+    color: #718096;
+}
+
+.nav-section {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+/* Logo Styles */
+.logo-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.logo {
+    width: 120px;
+    height: auto;
+    transition: transform 0.3s ease;
+}
+
+.logo:hover {
+    transform: scale(1.05);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container, .overview-container {
+        padding: 1rem;
+    }
+
+    h1 {
+        font-size: 2rem;
+    }
+
+    h2 {
+        font-size: 1.5rem;
+    }
+
+    .form, .expense-item, .summary, .user-insights {
+        padding: 1rem;
+    }
+
+    .navigation-buttons, .version-buttons, .nav-section {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .btn {
+        width: 100%;
+    }
+
+    .logo {
+        width: 100px;
+    }
+
+    .progress-bar {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .progress-step {
+        width: 100%;
+    }
+}
+
+.month-selector {
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.month-selector label {
+    font-weight: 500;
+}
+.month-selector select {
+    padding: 0.5rem;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+
+
+}
+

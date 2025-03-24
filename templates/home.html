@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+</head>
+<body>
+    <div class="container home-container">
+        <div class="logo-container">
+            <img src="/static/logo.png" alt="Expense Tracker Logo" class="logo">
+        </div>
+
+        <h1>Welcome to Your Expense Tracker</h1>
+        <p>Track your expenses efficiently with our easy-to-use tool.</p>
+
+        <div class="version-selector">
+            <h2>Choose an Experience:</h2>
+            <div class="version-buttons">
+                <a href="/set_version/random" class="btn btn-primary">Random Version</a>
+                <a href="/set_version/personalized" class="btn btn-primary">Personalized Version</a>
+            </div>
+            <p class="version-note">
+                <strong>Random Version:</strong> Uses randomly generated expense data.<br>
+                <strong>Personalized Version:</strong> Tracks your expenses with personalized insights over multiple runs.
+            </p>
+        </div>
+
+        <div class="nav-section">
+            <a href="/track_expenses" class="btn btn-primary">📊 Track Expenses</a>
+            <a href="/overview" class="btn btn-primary">📄 View Overview</a>
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for message in messages %}
+                    <div class="flash-message">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% endwith %}
+    </div>
+</body>
+</html>

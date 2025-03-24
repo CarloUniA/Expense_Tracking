@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track Expenses</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <style>
+        /* Existing styles */
+        input[type="month"] { width: 100%; padding: 10px; cursor: pointer; position: relative; }
+        input[type="month"]::-webkit-calendar-picker-indicator { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+        .finish-button-container { margin-top: 2rem; }
+        .action-buttons { display: flex; gap: 0.5rem; }
+        .btn-small { padding: 0.3rem 0.6rem; font-size: 0.9rem; border-radius: 4px; cursor: pointer; }
+        .btn-edit { background-color: #1a73e8; color: white; border: none; }
+        .btn-delete { background-color: #e53935; color: white; border: none; }
+        .btn-finish { background-color: #6B48FF; color: white; padding: 0.75rem 1.5rem; font-size: 1.1rem; font-weight: 600; border-radius: 8px; border: none; cursor: pointer; transition: background-color 0.3s; }
+        .btn-finish:hover { background-color: #5A3EDB; }
+        .expense-container { margin: 1rem 0; display: flex; flex-direction: column; gap: 0.5rem; }
+        .expense-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background-color: #f9f9f9; border-radius: 4px; border: 1px solid #e0e0e0; }
+        .expense-item .info { display: flex; gap: 1rem; align-items: center; }
+        .expense-item .info span { font-size: 0.9rem; }
+        .edit-form { display: none; margin-top: 0.5rem; padding: 1rem; background-color: #f0f0f0; border-radius: 4px; }
+        .edit-form.active { display: block; }
+        .income-container { margin: 1rem 0; display: flex; flex-direction: column; gap: 0.5rem; }
+        .income-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background-color: #f0fdf4; border-radius: 4px; border: 1px solid #bbf7d0; }
+        .income-item .info { display: flex; gap: 1rem; align-items: center; }
+        .income-item .info span { font-size: 0.9rem; }
+        .budget-status { margin: 1rem 0; padding: 0.75rem; border-radius: 4px; }
+        .budget-status.on-track { background-color: #d1fae5; border-left: 4px solid #10b981; }
+        .budget-status.over-budget { background-color: #fee2e2; border-left: 4px solid #ef4444; }
+        .form-tip {
+            display: block;
+            color: #64748b;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            font-style: italic;
+        }
+        /* New style for the Back button */
+        .btn-back {
+            background-color: #6c757d;
+            color: white;
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            margin-bottom: 1rem;
+        }
+        .btn-back:hover {
+            background-color: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Track Expenses</h1>
+
+        <div class="version-indicator">
+            You are using the <strong>{{ session.get('version').capitalize() }}</strong> version
+            {% if current_month %}
+                <span class="run-status">Tracking for {{ current_month|strftime }}</span>
+            {% endif %}
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for message in messages %}
+                    <div class="flash-message">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% endwith %}
+
+        <div class="progress-bar">
+            {% for step_info in progress_steps %}
+                <div class="progress-step {% if step_info.id == step %}active{% endif %} {% if step_info.completed %}completed{% endif %}">
+                    {{ step_info.name }}
+                </div>
+            {% endfor %}
+        </div>
+
+        {% if step == "set_goal" %}
+            <div class="hints">
+                <h3>Set Your Budget Goal</h3>
+                <p>Start by setting a monthly spending limit to track your expenses against.</p>
+            </div>
+            <form action="/track_expenses" method="post" class="form">
+                <input type="hidden" name="action" value="set_goal">
+                <div class="form-group">
+                    <label for="budget_goal">Budget Goal (€):</label>
+                    <input type="number" id="budget_goal" name="budget_goal" step="0.01" required class="input-field"
+                           {% if use_personalization and suggestions.suggested_budget_goal is not none %}
+                               placeholder="Suggested: {{ suggestions.suggested_budget_goal|round(2) }}"
+                           {% elif not use_personalization and random_data.budget_goal is not none %}
+                               placeholder="Suggested: {{ random_data.budget_goal|round(2) }}"
+                           {% endif %}>
+                    {% if use_personalization and suggestions.suggested_budget_goal is not none %}
+                        <small class="form-tip">Based on your past spending, we suggest a budget goal of {{ suggestions.suggested_budget_goal|round(2) }}€ to help you save.</small>
+                    {% elif not use_personalization and random_data.budget_goal is not none %}
+                        <small class="form-tip">Here’s a random budget goal to try: {{ random_data.budget_goal|round(2) }}€.</small>
+                    {% endif %}
+                </div>
+                <button type="submit" class="btn btn-primary">Set Goal</button>
+            </form>
+        {% elif step == "select_month" %}
+            <!-- Back button for Personalized version -->
+            {% if use_personalization %}
+                <form action="/track_expenses" method="post">
+                    <input type="hidden" name="action" value="go_back">
+                    <button type="submit" class="btn-back">Back</button>
+                </form>
+            {% endif %}
+            <div class="hints">
+                <h3>Select a Month</h3>
+                <p>Choose the month you want to track. You’ll add expenses and income next.</p>
+            </div>
+            <form action="/track_expenses" method="post" class="form">
+                <input type="hidden" name="action" value="select_month">
+                <label for="selected_month">Select Month:</label>
+                <input type="month" id="selected_month" name="selected_month" required class="input-field" onfocus="this.showPicker()">
+                <button type="submit" class="btn btn-primary">Start Tracking</button>
+            </form>
+        {% elif step == "track_expenses" %}
+            <!-- Back button for Personalized version -->
+            {% if use_personalization %}
+                <form action="/track_expenses" method="post">
+                    <input type="hidden" name="action" value="go_back">
+                    <button type="submit" class="btn-back">Back</button>
+                </form>
+            {% endif %}
+            <div class="hints">
+                <h3>Track Your Finances</h3>
+                <p>Add expenses and income for {{ current_month|strftime }}.
+                    {% if use_personalization %}
+                        Suggested categories: {{ suggestions.top_categories|join(', ') }} | Suggested income sources: {{ suggestions.top_income_sources|join(', ') }}.
+                    {% endif %}
+                </p>
+            </div>
+
+            <div class="budget-status {{ budget_status }}">
+                <strong>Budget Status:</strong>
+                {{ "On Track" if budget_status == "on_track" else "Over Budget" }}
+                - Remaining: {{ budget_remaining|round(2) }}€
+                {% if use_personalization and user_model.budget_goal is not none %}
+                    / Goal: {{ user_model.budget_goal|round(2) }}€
+                    {% if budget_status == "over_budget" and suggestions.top_categories %}
+                        <p>Suggestion: Reduce spending in {{ suggestions.top_categories[0] }} ({{ expenses|selectattr('category', 'equalto', suggestions.top_categories[0])|map(attribute='amount')|sum|round(2) }}€)</p>
+                    {% endif %}
+                {% else %}
+                    {% if random_data.budget_goal is not none %}
+                        / Goal: {{ random_data.budget_goal|round(2) }}€
+                    {% else %}
+                        / Goal: Not set
+                    {% endif %}
+                {% endif %}
+            </div>
+
+            <!-- Expense Form -->
+            <form action="/track_expenses" method="post" class="form">
+                <input type="hidden" name="action" value="add_expense">
+                <div class="form-group">
+                    <label for="expense_category">Category:</label>
+                    <input list="expense_categories" id="expense_category" name="expense_category" class="input-field" required
+                           {% if use_personalization %}
+                               placeholder="Suggested: {{ suggestions.top_categories[0] if suggestions.top_categories else '' }}"
+                           {% endif %}>
+                    <datalist id="expense_categories">
+                        {% for category in expense_categories %}
+                            <option value="{{ category }}">
+                        {% endfor %}
+                    </datalist>
+                    {% if use_personalization and ui_adjustments.show_guidance %}
+                        <small class="form-tip">Choose a category that matches your expense (e.g., Rent, Groceries).</small>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="expense_amount">Amount (€):</label>
+                    <input type="number" id="expense_amount" name="expense_amount" step="0.01" required class="input-field"
+                           {% if use_personalization %}
+                               placeholder="Suggested: {{ suggestions.suggested_amounts.get(suggestions.top_categories[0], 0)|round(2) if suggestions.top_categories else '' }}"
+                           {% endif %}>
+                </div>
+                {% if not ui_adjustments.simplify_form %}
+                    <div class="form-group">
+                        <label for="expense_date">Date (Optional):</label>
+                        <input type="date" id="expense_date" name="expense_date" class="input-field" value="{{ today_date }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="expense_description">Description (Optional):</label>
+                        <input type="text" id="expense_description" name="expense_description" class="input-field">
+                    </div>
+                {% endif %}
+                <button type="submit" class="btn btn-primary">Add Expense</button>
+            </form>
+
+            <!-- Income Form -->
+            <form action="/track_expenses" method="post" class="form">
+                <input type="hidden" name="action" value="add_income">
+                <div class="form-group">
+                    <label for="income_source">Income Source:</label>
+                    <input list="income_sources" id="income_source" name="income_source" class="input-field" required
+                           {% if use_personalization %}
+                               placeholder="Suggested: {{ suggestions.top_income_sources[0] if suggestions.top_income_sources else '' }}"
+                           {% endif %}>
+                    <datalist id="income_sources">
+                        {% for source in income_sources %}
+                            <option value="{{ source }}">
+                        {% endfor %}
+                    </datalist>
+                    {% if use_personalization and ui_adjustments.show_guidance %}
+                        <small class="form-tip">Select the source of your income (e.g., Salary, Freelance).</small>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="income_amount">Amount (€):</label>
+                    <input type="number" id="income_amount" name="income_amount" step="0.01" required class="input-field"
+                           {% if use_personalization %}
+                               placeholder="Suggested: {{ suggestions.suggested_income_amounts.get(suggestions.top_income_sources[0], 0)|round(2) if suggestions.top_income_sources else '' }}"
+                           {% endif %}>
+                </div>
+                {% if not ui_adjustments.simplify_form %}
+                    <div class="form-group">
+                        <label for="income_date">Date (Optional):</label>
+                        <input type="date" id="income_date" name="income_date" class="input-field" value="{{ today_date }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="income_description">Description (Optional):</label>
+                        <input type="text" id="income_description" name="income_description" class="input-field">
+                    </div>
+                {% endif %}
+                <button type="submit" class="btn btn-primary">Add Income</button>
+            </form>
+
+            <!-- Expenses List -->
+            <h2>Expenses for {{ current_month|strftime }}</h2>
+            <div class="expense-container">
+                {% for expense in expenses %}
+                    <div class="expense-item">
+                        <div class="info">
+                            <span>{{ expense.category }} {% if expense.auto_added %}(Auto-added){% endif %}</span>
+                            <span>{{ expense.amount }}€</span>
+                            <span>{{ expense.date }}</span>
+                            {% if expense.description %}
+                                <span>{{ expense.description }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn-small btn-edit" onclick="toggleEditForm('expense-{{ expense.id }}')">Edit</button>
+                            <form action="/track_expenses" method="post" style="display:inline;">
+                                <input type="hidden" name="action" value="delete_expense">
+                                <input type="hidden" name="expense_id" value="{{ expense.id }}">
+                                <button type="submit" class="btn-small btn-delete">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div id="expense-{{ expense.id }}" class="edit-form">
+                        <form action="/track_expenses" method="post">
+                            <input type="hidden" name="action" value="edit_expense">
+                            <input type="hidden" name="expense_id" value="{{ expense.id }}">
+                            <div class="form-group">
+                                <label for="expense_category_{{ expense.id }}">Category:</label>
+                                <input list="expense_categories_{{ expense.id }}" id="expense_category_{{ expense.id }}" name="expense_category" value="{{ expense.category }}" required class="input-field">
+                                <datalist id="expense_categories_{{ expense.id }}">
+                                    {% for category in expense_categories %}
+                                        <option value="{{ category }}">
+                                    {% endfor %}
+                                </datalist>
+                            </div>
+                            <div class="form-group">
+                                <label for="expense_amount_{{ expense.id }}">Amount (€):</label>
+                                <input type="number" id="expense_amount_{{ expense.id }}" name="expense_amount" step="0.01" value="{{ expense.amount }}" required class="input-field">
+                            </div>
+                            <div class="form-group">
+                                <label for="expense_date_{{ expense.id }}">Date:</label>
+                                <input type="date" id="expense_date_{{ expense.id }}" name="expense_date" value="{{ expense.date }}" class="input-field">
+                            </div>
+                            <div class="form-group">
+                                <label for="expense_description_{{ expense.id }}">Description:</label>
+                                <input type="text" id="expense_description_{{ expense.id }}" name="expense_description" value="{{ expense.description }}" class="input-field">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                            <button type="button" class="btn btn-secondary" onclick="toggleEditForm('expense-{{ expense.id }}')">Cancel</button>
+                        </form>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Income List -->
+            <h2>Income for {{ current_month|strftime }}</h2>
+            <div class="income-container">
+                {% for income in incomes %}
+                    <div class="income-item">
+                        <div class="info">
+                            <span>{{ income.source }} {% if income.auto_added %}(Auto-added){% endif %}</span>
+                            <span>{{ income.amount }}€</span>
+                            <span>{{ income.date }}</span>
+                            {% if income.description %}
+                                <span>{{ income.description }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn-small btn-edit" onclick="toggleEditForm('income-{{ income.id }}')">Edit</button>
+                            <form action="/track_expenses" method="post" style="display:inline;">
+                                <input type="hidden" name="action" value="delete_income">
+                                <input type="hidden" name="income_id" value="{{ income.id }}">
+                                <button type="submit" class="btn-small btn-delete">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div id="income-{{ income.id }}" class="edit-form">
+                        <form action="/track_expenses" method="post">
+                            <input type="hidden" name="action" value="edit_income">
+                            <input type="hidden" name="income_id" value="{{ income.id }}">
+                            <div class="form-group">
+                                <label for="income_source_{{ income.id }}">Source:</label>
+                                <input list="income_sources_{{ income.id }}" id="income_source_{{ income.id }}" name="income_source" value="{{ income.source }}" required class="input-field">
+                                <datalist id="income_sources_{{ income.id }}">
+                                    {% for source in income_sources %}
+                                        <option value="{{ source }}">
+                                    {% endfor %}
+                                </datalist>
+                            </div>
+                            <div class="form-group">
+                                <label for="income_amount_{{ income.id }}">Amount (€):</label>
+                                <input type="number" id="income_amount_{{ income.id }}" name="income_amount" step="0.01" value="{{ income.amount }}" required class="input-field">
+                            </div>
+                            <div class="form-group">
+                                <label for="income_date_{{ income.id }}">Date:</label>
+                                <input type="date" id="income_date_{{ income.id }}" name="income_date" value="{{ income.date }}" class="input-field">
+                            </div>
+                            <div class="form-group">
+                                <label for="income_description_{{ income.id }}">Description:</label>
+                                <input type="text" id="income_description_{{ income.id }}" name="income_description" value="{{ income.description }}" class="input-field">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                            <button type="button" class="btn btn-secondary" onclick="toggleEditForm('income-{{ income.id }}')">Cancel</button>
+                        </form>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <p>Total Income: {{ total_income|round(2) }}€ | Total Expenses: {{ total_expenses|round(2) }}€
+                {% if use_personalization %}
+                    {% if user_model.budget_goal is not none %}
+                        | Goal: {{ user_model.budget_goal|round(2) }}€
+                    {% else %}
+                        | Goal: Not set
+                    {% endif %}
+                {% else %}
+                    {% if random_data.budget_goal is not none %}
+                        | Goal: {{ random_data.budget_goal|round(2) }}€
+                    {% else %}
+                        | Goal: Not set
+                    {% endif %}
+                {% endif %}
+            </p>
+            <div class="finish-button-container">
+                <form action="/track_expenses" method="post">
+                    <input type="hidden" name="action" value="verify_expenses">
+                    <button type="submit" class="btn btn-finish">Finish Tracking</button>
+                </form>
+            </div>
+        {% elif step == "finish_run" %}
+            <!-- Back button for Personalized version -->
+            {% if use_personalization %}
+                <form action="/track_expenses" method="post">
+                    <input type="hidden" name="action" value="go_back">
+                    <button type="submit" class="btn-back">Back</button>
+                </form>
+            {% endif %}
+            <div class="hints">
+                <h3>Finish the Run</h3>
+                <p>Review your finances for {{ current_month|strftime }} and provide feedback.</p>
+            </div>
+            <p>Total Income: {{ total_income|round(2) }}€ | Total Expenses: {{ total_expenses|round(2) }}€
+                {% if use_personalization %}
+                    {% if user_model.budget_goal is not none %}
+                        | Goal: {{ user_model.budget_goal|round(2) }}€
+                    {% else %}
+                        | Goal: Not set
+                    {% endif %}
+                {% else %}
+                    {% if random_data.budget_goal is not none %}
+                        | Goal: {{ random_data.budget_goal|round(2) }}€
+                    {% else %}
+                        | Goal: Not set
+                    {% endif %}
+                {% endif %}
+            </p>
+            <form action="/track_expenses" method="post" class="form">
+                <input type="hidden" name="action" value="submit_feedback">
+                <div class="form-group">
+                    <label for="feedback">Feedback:</label>
+                    <textarea id="feedback" name="feedback" rows="4" placeholder="How was your experience tracking this month?" class="input-field"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="ease_of_use">How easy was it to use the app? (1 = Very Difficult, 5 = Very Easy)</label>
+                    <select id="ease_of_use" name="ease_of_use" required class="input-field">
+                        <option value="1">1 - Very Difficult</option>
+                        <option value="2">2 - Difficult</option>
+                        <option value="3">3 - Neutral</option>
+                        <option value="4">4 - Easy</option>
+                        <option value="5">5 - Very Easy</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="satisfaction">How satisfied are you with the app? (1 = Very Dissatisfied, 5 = Very Satisfied)</label>
+                    <select id="satisfaction" name="satisfaction" required class="input-field">
+                        <option value="1">1 - Very Dissatisfied</option>
+                        <option value="2">2 - Dissatisfied</option>
+                        <option value="3">3 - Neutral</option>
+                        <option value="4">4 - Satisfied</option>
+                        <option value="5">5 - Very Satisfied</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Submit Feedback</button>
+            </form>
+        {% endif %}
+
+        <div class="navigation-buttons">
+            <a href="/overview" class="btn btn-secondary">Go to Overview</a>
+            <a href="/" class="btn btn-secondary">Return to Home</a>
+        </div>
+    </div>
+
+    <script>
+        function toggleEditForm(formId) {
+            const form = document.getElementById(formId);
+            form.classList.toggle('active');
+        }
+    </script>
+</body>
+</html>
