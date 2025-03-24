@@ -777,6 +777,12 @@ def overview():
         has_data=bool(expenses or incomes)
     )
 
+@app.before_first_request
+def initialize_database():
+    with app.app_context():
+        db.create_all()
+        print("Database tables created on first request")
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     with app.app_context():
